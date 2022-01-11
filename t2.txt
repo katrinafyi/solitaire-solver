@@ -1,0 +1,5 @@
+h c d s r10 r10 r10 r10
+h c d s b9 b9 b9 b9
+h c d s r8 r8 r8 r8
+h c d s b7 b7 b7 b7
+. . . . r6 r6 r6 r6

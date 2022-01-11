@@ -2,8 +2,8 @@ module Solitaire where
 
 import Data.Char (toLower)
 import Control.Applicative ((<|>))
-import Data.Maybe (mapMaybe, fromJust, isJust, isNothing)
-import Data.List (transpose, partition)
+import Data.Maybe (mapMaybe, fromJust, isJust, isNothing, catMaybes)
+import Data.List (transpose, partition, foldl1')
 import Data.Function (on)
 import qualified Data.List.NonEmpty as N
 import Data.List.NonEmpty (NonEmpty, NonEmpty((:|)), nonEmpty)
@@ -35,6 +35,9 @@ matches (Num c1 n1) (Num c2 n2)
     | n1 < maxBound = flipColour c1 == c2 && succ n1 == n2
 matches (Face s1) (Face s2) = s1 == s2
 matches _ _ = False
+
+allMatches :: NonEmpty Card -> Bool
+allMatches cs = and $ zipWith matches (toList cs) (N.tail cs)
 
 isNum :: Card -> Bool
 isNum (Num _ _) = True
@@ -68,8 +71,8 @@ parseCard (x:xs) = (Face <$> parseSuit x) <|> (Num <$> parseColour x <*> parseN 
 parseCard _ = Nothing
 
 parseBoard :: String -> Board
-parseBoard raw = Board (reverse <$> transpose cards) Nothing
-    where cards = fmap (mapMaybe parseCard . words) $ lines $ fmap toLower raw
+parseBoard raw = Board (catMaybes . reverse <$> transpose cards) Nothing
+    where cards = fmap (fmap parseCard . words) $ lines $ fmap toLower raw
 
 movable :: NonEmpty Card -> NonEmpty Card
 movable (x:|xs) = x :| fmap snd (takeWhile (uncurry matches) rest)
@@ -144,8 +147,13 @@ doMoveOnBlank (Move _ Nothing cs) _ = Just (N.head cs)
 doMoveOnBlank Move {} x = x
 
 
--- movesWith :: (Card -> Card -> Bool) -> Board -> [Move]
--- movesWith f = filter (f `on`)
+isSolved :: Board -> Bool
+isSolved (Board stacks blank) = isNothing blank
+        && length ss == 8 && length nums == 4 && length faces == 4
+        && all allMatches ss
+    where
+        ss = snd <$> nonEmptyStacks stacks
+        (nums, faces) = partition (isNum . N.head) ss
 
 b :: Board
 b = Board {boardStacks = [[Num R N6,Num B N7,Num R N8,Face H],[Num B N10,Num R N8,Face S,Num B N6],[Num B N6,Face D,Face D,Face D],[Face H,Face C,Face C,Face C],[Num R N9,Num R N7,Num R N9,Face S],[Num R N10,Num B N9,Face H,Num R N7],[Face C,Face H,Num B N7,Num B N10],[Face S,Num B N8,Num R N6,Num R N10],[Num B N8,Num B N9,Face D,Face S]], boardBlank = Nothing}
@@ -165,11 +173,17 @@ printBoard (Board stacks blank) = do
 test :: IO ()
 test = readFile "t1.txt" >>= main'
 
+test2 :: IO ()
+test2 = readFile "t2.txt" >>= main'
+
 main' :: String -> IO ()
 main' raw = do
     let board = parseBoard raw
     print board
-    -- print $ allMoves board
+
+    print $ allMoves board
+
+    print $ isSolved board
 
 main :: IO ()
 main = putStrLn "main"
