@@ -1,7 +1,7 @@
 module Solitaire where
 
 import Data.Char (toLower)
-import Control.Applicative ((<|>))
+import Control.Applicative (empty, (<|>))
 import Data.Maybe (mapMaybe, fromJust, isJust, isNothing, catMaybes, fromMaybe)
 import Data.List (transpose, partition, foldl1')
 import Data.Function (on)
@@ -9,6 +9,7 @@ import qualified Data.List.NonEmpty as N
 import Data.List.NonEmpty (NonEmpty, NonEmpty((:|)), nonEmpty)
 import Control.Monad (guard)
 import Data.Foldable (Foldable(toList))
+import Control.Monad.Logic
 
 data N = N6 | N7 | N8 | N9 | N10
     deriving (Eq, Show, Ord, Enum, Bounded)
@@ -164,16 +165,14 @@ isSolved (Board stacks blank) = isNothing blank
         ss = snd <$> nonEmptyStacks stacks
         (nums, faces) = partition (isNum . N.head) ss
 
+choose = foldl mplus empty . fmap pure
 
-solveBoard :: Board -> [[Board]]
-solveBoard b = solveHelper b Nothing
+solveBoard :: Board -> Logic [Board]
+solveBoard b
+    | isSolved b = pure [b]
+solveBoard b = do
+    choose (allMoves b) >>- \m -> (b:) <$> solveBoard (doMove m b)
 
-solveHelper :: Board -> Maybe Move -> [[Board]]
-solveHelper b prev = do
-    move <- allMoves b
-    guard $ maybe True ((/= moveFrom move) . moveTo) prev
-    let b' = doMove move b
-    (b:) <$> solveHelper b' (Just move)
 
 
 b :: Board
@@ -205,6 +204,8 @@ main' raw = do
     print $ allMoves board
 
     print $ isSolved board
+
+    print $ observe $ solveBoard board
 
 main :: IO ()
 main = putStrLn "main"
