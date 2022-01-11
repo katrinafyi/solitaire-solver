@@ -150,6 +150,18 @@ doMoveOnBlank Move {} x = x
 b :: Board
 b = Board {boardStacks = [[Num R N6,Num B N7,Num R N8,Face H],[Num B N10,Num R N8,Face S,Num B N6],[Num B N6,Face D,Face D,Face D],[Face H,Face C,Face C,Face C],[Num R N9,Num R N7,Num R N9,Face S],[Num R N10,Num B N9,Face H,Num R N7],[Face C,Face H,Num B N7,Num B N10],[Face S,Num B N8,Num R N6,Num R N10],[Num B N8,Num B N9,Face D,Face S]], boardBlank = Nothing}
 
+showCard :: Card -> String
+showCard (Num c n) = show c ++ show n ++ " "
+showCard (Face s) = show s ++ "  "
+
+printBoard :: Board -> IO ()
+printBoard (Board stacks blank) = do
+    putStr "Blank: "
+    print blank
+    putStrLn "Board:"
+    let rows = transpose stacks
+    mapM_ putStrLn $ reverse $ concatMap ((++ "  \t") . showCard) <$> transpose stacks
+
 test :: IO ()
 test = readFile "t1.txt" >>= main'
 
