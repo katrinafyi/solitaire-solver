@@ -2,7 +2,7 @@ module Solitaire where
 
 import Data.Char (toLower)
 import Control.Applicative ((<|>))
-import Data.Maybe (mapMaybe, fromJust, isJust, isNothing, catMaybes)
+import Data.Maybe (mapMaybe, fromJust, isJust, isNothing, catMaybes, fromMaybe)
 import Data.List (transpose, partition, foldl1')
 import Data.Function (on)
 import qualified Data.List.NonEmpty as N
@@ -25,6 +25,15 @@ data Move = Move (Maybe Int) (Maybe Int) (NonEmpty Card) deriving (Show, Eq)
 
 moveCards :: Move -> NonEmpty Card
 moveCards (Move _ _ c) = c
+
+moveFrom :: Move -> Maybe Int
+moveFrom (Move i _ _) = i
+
+moveTo :: Move -> Maybe Int
+moveTo (Move _ j _) = j
+
+moveUsedBlank :: Move -> Bool
+moveUsedBlank (Move i j _) = isNothing i || isNothing j
 
 flipColour :: Colour -> Colour
 flipColour R = B
@@ -138,7 +147,7 @@ doMove move (Board stacks blank) = Board stacks' blank'
 doMoveOnStack :: Move -> (Int, [Card]) -> [Card]
 doMoveOnStack (Move i j cs) (n, s)
     | Just n == i = drop (length cs) s
-    | Just n == j = toList (N.reverse cs) ++ s
+    | Just n == j = toList cs ++ s
     | otherwise = s
 
 doMoveOnBlank :: Move -> Maybe Card -> Maybe Card
@@ -154,6 +163,18 @@ isSolved (Board stacks blank) = isNothing blank
     where
         ss = snd <$> nonEmptyStacks stacks
         (nums, faces) = partition (isNum . N.head) ss
+
+
+solveBoard :: Board -> [[Board]]
+solveBoard b = solveHelper b Nothing
+
+solveHelper :: Board -> Maybe Move -> [[Board]]
+solveHelper b prev = do
+    move <- allMoves b
+    guard $ maybe True ((/= moveFrom move) . moveTo) prev
+    let b' = doMove move b
+    (b:) <$> solveHelper b' (Just move)
+
 
 b :: Board
 b = Board {boardStacks = [[Num R N6,Num B N7,Num R N8,Face H],[Num B N10,Num R N8,Face S,Num B N6],[Num B N6,Face D,Face D,Face D],[Face H,Face C,Face C,Face C],[Num R N9,Num R N7,Num R N9,Face S],[Num R N10,Num B N9,Face H,Num R N7],[Face C,Face H,Num B N7,Num B N10],[Face S,Num B N8,Num R N6,Num R N10],[Num B N8,Num B N9,Face D,Face S]], boardBlank = Nothing}
