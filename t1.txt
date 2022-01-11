@@ -1,0 +1,4 @@
+h  b6  d  c s  r7  b10 r10 s
+r8 s   d  c r9 h   b7  r6  d
+b7 r8  d  c r7 b9  h   b8  b9
+r6 b10 b6 h r9 r10 c   s   b8
